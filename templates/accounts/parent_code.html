@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Parent Invite Code — CommQuality Analyzer{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height:80vh;">
+  <div class="col-12 col-md-6 col-lg-5">
+    <div class="glass-card p-4 p-md-5">
+      <div class="text-center mb-4">
+        <div class="mb-3"><span style="font-size:3rem;">📨</span></div>
+        <h1 class="section-title fs-2">Your Parent Invite Code</h1>
+        <p class="text-muted">Share this code with your child so they can link their account.</p>
+      </div>
+
+      <div class="alert alert-info border-0 rounded-4 py-4 text-center">
+        <div class="fw-bold mb-2">Family invite code</div>
+        <div class="fs-3 text-dark" style="letter-spacing:.24em;">{{ invite_code }}</div>
+      </div>
+
+      <p class="text-center text-muted mb-0">
+        Once your child enters this code, their account will be connected to yours.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,334 @@
+{% extends 'base.html' %}
+{% block title %}Questionnaire — CommQuality Analyzer{% endblock %}
+
+{% block extra_head %}
+<style>
+  .question-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 1rem;
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.25rem;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .question-card:hover { border-color: var(--primary); box-shadow: 0 4px 20px rgba(108,99,255,.15); }
+  .question-card.answered { border-color: rgba(34,197,94,.4); }
+
+  .question-number {
+    width: 2.2rem; height: 2.2rem;
+    background: linear-gradient(135deg,var(--primary),var(--primary-d));
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: .85rem;
+    flex-shrink: 0;
+  }
+
+  .likert-group { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .75rem; }
+  .likert-label {
+    flex: 1; min-width: 3.5rem; text-align: center;
+    cursor: pointer;
+  }
+  .likert-label input { display: none; }
+  .likert-btn {
+    display: block;
+    background: rgba(255,255,255,.05);
+    border: 2px solid rgba(108,99,255,.25);
+    border-radius: .65rem;
+    padding: .55rem .25rem;
+    color: #cbd5e1;
+    font-weight: 600;
+    font-size: .9rem;
+    transition: all .2s;
+    user-select: none;
+  }
+  .likert-label:hover .likert-btn { border-color: var(--primary); color: var(--primary); }
+  .likert-label input:checked + .likert-btn {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(108,99,255,.4);
+    transform: translateY(-2px);
+  }
+
+  .likert-legend {
+    display: flex; justify-content: space-between;
+    color: #8892a4; font-size: .75rem; margin-top: .35rem; padding: 0 .25rem;
+  }
+
+  .progress-track {
+    background: rgba(255,255,255,.07);
+    border-radius: .5rem;
+    height: .5rem;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg,var(--primary),var(--accent));
+    border-radius: .5rem;
+    transition: width .4s ease;
+  }
+
+  .demo-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 1.25rem;
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+  .demo-card .demo-icon {
+    width: 2.8rem; height: 2.8rem;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    border-radius: .75rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-8">
+
+    <!-- Page header -->
+    <div class="text-center mb-5">
+      <h1 class="section-title fs-1 mb-2">Communication Questionnaire</h1>
+      <p class="text-muted fs-5">
+        Answer each question honestly. Your responses will be analyzed by our ML model.
+      </p>
+      <div class="badge px-3 py-2 rounded-pill mb-2" style="background:rgba(108,99,255,.2);color:var(--primary);">
+        <i class="bi bi-person-fill me-1"></i>Responding as: <strong>{{ user.username }}</strong>
+        ({{ user.role }})
+      </div>
+
+      {% if user.role == 'parent' %}
+      <div class="alert alert-info border-0 rounded-4 py-3">
+        <strong>Share this code with your child:</strong>
+        <span class="d-inline-block ms-2 px-3 py-2 bg-white text-dark rounded-pill" style="letter-spacing:.18em;">
+          {{ user.invite_code }}
+        </span>
+      </div>
+      {% elif user.role == 'child' and user.parent %}
+      <div class="alert alert-success border-0 rounded-4 py-3">
+        Connected to parent: <strong>{{ user.parent.username }}</strong>
+      </div>
+      {% elif user.role == 'child' %}
+      <div class="alert alert-warning border-0 rounded-4 py-3">
+        You need to connect with your parent to see linked family results.
+        <a href="{% url 'connect_child' %}" class="fw-semibold">Enter parent code</a>.
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Progress bar -->
+    <div class="progress-track">
+      <div class="progress-fill" id="progressBar" style="width:0%"></div>
+    </div>
+    <p class="text-end text-muted small mb-3" id="progressLabel">0 / 10 required answered</p>
+
+    <!-- Questionnaire form -->
+    <form id="questionnaireForm" method="post" action="{% url 'questionnaire' %}">
+      {% csrf_token %}
+
+      <!-- ── Demographic Information ── -->
+      <div class="demo-card fade-in-up">
+        <div class="d-flex align-items-center gap-3 mb-4">
+          <div class="demo-icon text-white"><i class="bi bi-people-fill"></i></div>
+          <div>
+            <h2 class="fs-5 fw-bold mb-0">Family Information</h2>
+            <p class="text-muted small mb-0">Tell us about your family to personalize the analysis</p>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-12 col-md-4">
+            <label for="parent_age" class="form-label fw-semibold">
+              <i class="bi bi-person me-1" style="color:var(--primary)"></i>Parent Age
+            </label>
+            <input type="number" id="parent_age" name="parent_age"
+              class="form-control form-control-custom"
+              placeholder="e.g. 35" min="18" max="100" required />
+          </div>
+          <div class="col-12 col-md-4">
+            <label for="child_age" class="form-label fw-semibold">
+              <i class="bi bi-emoji-smile me-1" style="color:var(--primary)"></i>Child Age
+            </label>
+            <input type="number" id="child_age" name="child_age"
+              class="form-control form-control-custom"
+              placeholder="e.g. 12" min="1" max="30" required />
+          </div>
+          <div class="col-12 col-md-4">
+            <label for="family_type" class="form-label fw-semibold">
+              <i class="bi bi-house-heart me-1" style="color:var(--primary)"></i>Family Type
+            </label>
+            <select id="family_type" name="family_type" class="form-select form-select-custom" required>
+              <option value="" disabled selected>Select type…</option>
+              {% for value, label in family_types %}
+              <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Questions ── -->
+      {% for q in questions_data %}
+      <div class="question-card" id="qcard-{{ forloop.counter }}">
+        <div class="d-flex align-items-center gap-3 mb-2">
+          <div class="question-number text-white">{{ forloop.counter }}</div>
+          <p class="mb-0 fw-semibold" style="font-size:.975rem;">{{ q.text }}</p>
+        </div>
+
+        <!-- Likert scale 1–5 -->
+        <div class="likert-group" role="radiogroup" aria-label="Question {{ forloop.counter }}">
+          {% for val in q.choices %}
+          <label class="likert-label" for="pq{{ forloop.parentloop.counter }}_{{ val.value }}">
+            <input type="radio"
+              id="pq{{ forloop.parentloop.counter }}_{{ val.value }}"
+              name="pq{{ forloop.parentloop.counter }}"
+              value="{{ val.value }}"
+              data-qnum="{{ forloop.parentloop.counter }}"
+              required
+            />
+            <span class="likert-btn">
+              {{ val.emoji }}<br /><span style="font-size:.7rem;opacity:.8;">{{ val.value }}</span>
+            </span>
+          </label>
+          {% endfor %}
+        </div>
+        <div class="likert-legend">
+          <span>Never</span><span>Rarely</span><span>Sometimes</span><span>Often</span><span>Always</span>
+        </div>
+      </div>
+      {% endfor %}
+
+      <!-- ── Child Questionnaire (Questions 11-20) ── -->
+      <div class="demo-card fade-in-up mt-4">
+        <div class="d-flex align-items-center gap-3 mb-4">
+          <div class="demo-icon text-white"><i class="bi bi-emoji-smile-fill"></i></div>
+          <div>
+            <h2 class="fs-5 fw-bold mb-0">Child's Perspective</h2>
+            <p class="text-muted small mb-0">Optional — How does your child respond to you?</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Child Questions ── -->
+      {% for q in child_questions_data %}
+      <div class="question-card" id="qcard-{{ forloop.counter|add:10 }}">
+        <div class="d-flex align-items-center gap-3 mb-2">
+          <div class="question-number text-white">{{ forloop.counter|add:10 }}</div>
+          <p class="mb-0 fw-semibold" style="font-size:.975rem;">{{ q.text }}</p>
+        </div>
+
+        <!-- Likert scale 1–5 -->
+        <div class="likert-group" role="radiogroup" aria-label="Question {{ forloop.counter|add:10 }}">
+          {% for val in q.choices %}
+          <label class="likert-label" for="cq{{ forloop.parentloop.counter }}_{{ val.value }}">
+            <input type="radio"
+              id="cq{{ forloop.parentloop.counter }}_{{ val.value }}"
+              name="cq{{ forloop.parentloop.counter }}"
+              value="{{ val.value }}"
+              data-qnum="{{ forloop.parentloop.counter|add:10 }}"
+            />
+            <span class="likert-btn">
+              {{ val.emoji }}<br /><span style="font-size:.7rem;opacity:.8;">{{ val.value }}</span>
+            </span>
+          </label>
+          {% endfor %}
+        </div>
+        <div class="likert-legend">
+          <span>Never</span><span>Rarely</span><span>Sometimes</span><span>Often</span><span>Always</span>
+        </div>
+      </div>
+      {% endfor %}
+
+      <div class="d-flex justify-content-center mt-4">
+        <button type="submit" class="btn btn-primary-custom px-5 py-3 fs-5" id="submitBtn" disabled>
+          <i class="bi bi-cpu me-2"></i>Analyze My Communication
+        </button>
+      </div>
+      <p class="text-center text-muted mt-2 small">
+        <i class="bi bi-shield-check me-1"></i>All responses are private and securely stored.
+      </p>
+    </form>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const REQUIRED_TOTAL = 10;
+  const answered = new Set();
+  let demoComplete = false;
+
+  // Check if all demographic fields are filled
+  function checkDemoFields() {
+    const parentAge = document.getElementById('parent_age').value;
+    const childAge = document.getElementById('child_age').value;
+    const familyType = document.getElementById('family_type').value;
+    demoComplete = parentAge && childAge && familyType;
+    checkSubmitReady();
+  }
+
+  function checkSubmitReady() {
+    const btn = document.getElementById('submitBtn');
+    const requiredAnswered = Array.from(answered).filter(qnum => qnum <= REQUIRED_TOTAL).length;
+    if (requiredAnswered === REQUIRED_TOTAL && demoComplete) {
+      btn.disabled = false;
+      btn.classList.add('pulse');
+    } else {
+      btn.disabled = true;
+      btn.classList.remove('pulse');
+    }
+  }
+
+  // Listen to demographic field changes
+  document.getElementById('parent_age').addEventListener('input', checkDemoFields);
+  document.getElementById('child_age').addEventListener('input', checkDemoFields);
+  document.getElementById('family_type').addEventListener('change', checkDemoFields);
+
+  // Listen to radio button changes
+  document.querySelectorAll('input[type="radio"]').forEach(function(radio) {
+    radio.addEventListener('change', function () {
+      const qnum = parseInt(this.dataset.qnum, 10);
+      answered.add(qnum);
+
+      // Mark card as answered
+      const card = document.getElementById('qcard-' + qnum);
+      card.classList.add('answered');
+
+      // Update progress
+      const requiredAnswered = Array.from(answered).filter(num => num <= REQUIRED_TOTAL).length;
+      const pct = Math.round((requiredAnswered / REQUIRED_TOTAL) * 100);
+      document.getElementById('progressBar').style.width = pct + '%';
+      document.getElementById('progressLabel').textContent =
+        requiredAnswered + ' / ' + REQUIRED_TOTAL + ' required answered';
+
+      checkSubmitReady();
+    });
+  });
+
+  // Loading state on submit
+  document.getElementById('questionnaireForm').addEventListener('submit', function () {
+    const btn = document.getElementById('submitBtn');
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Analyzing…';
+    btn.disabled = true;
+  });
+</script>
+
+<script>
+  // Pulse animation for enabled submit button
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 6px 20px rgba(108,99,255,.45); }
+      50% { box-shadow: 0 6px 35px rgba(108,99,255,.8); }
+    }
+    .pulse { animation: pulse 1.5s ease-in-out infinite; }
+  `;
+  document.head.appendChild(style);
+</script>
+{% endblock %}
