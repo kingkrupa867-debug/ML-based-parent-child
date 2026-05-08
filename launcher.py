@@ -128,7 +128,7 @@ def start_django() -> None:
         log(f'Using Python: {python}')
         log(f'Script mode: starting Django via subprocess: {manage}')
         try:
-            subprocess.Popen(
+            django_proc = subprocess.Popen(
                 [
                     python, manage, 'runserver',
                     f'{DJANGO_HOST}:{DJANGO_PORT}',
@@ -140,6 +140,8 @@ def start_django() -> None:
                 stderr=subprocess.DEVNULL,
                 creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0,
             )
+            import atexit
+            atexit.register(django_proc.kill)
         except Exception as e:
             log(f'Failed to start Django subprocess: {e}', 'ERROR')
 
@@ -256,13 +258,41 @@ def open_window() -> None:
             webview.start(debug=False)
 
     except ImportError:
-        log('[launcher] pywebview not found — opening in browser instead.')
-        webbrowser.open(APP_URL)
         try:
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            pass
+            from PyQt6.QtCore import QUrl
+            from PyQt6.QtWidgets import QApplication, QMainWindow
+            from PyQt6.QtWebEngineWidgets import QWebEngineView
+            from PyQt6.QtWebEngineCore import QWebEnginePage
+            
+            log('[launcher] pywebview not found — using PyQt6 instead.')
+            
+            app = QApplication(sys.argv)
+            window = QMainWindow()
+            window.setWindowTitle('CommQuality — Parent-Child Communication Analyzer')
+            window.resize(1280, 800)
+            
+            browser = QWebEngineView()
+            
+            # Automatically grant permissions (e.g. Clipboard access)
+            def handle_permission(url, feature):
+                browser.page().setFeaturePermission(url, feature, QWebEnginePage.PermissionPolicy.PermissionGrantedByUser)
+            
+            browser.page().featurePermissionRequested.connect(handle_permission)
+            
+            browser.setUrl(QUrl(SPLASH_URL))
+            window.setCentralWidget(browser)
+            
+            window.show()
+            sys.exit(app.exec())
+            
+        except ImportError:
+            log('[launcher] pywebview and PyQt6 not found — opening in browser instead.')
+            webbrowser.open(APP_URL)
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                pass
 
 
 def main() -> None:

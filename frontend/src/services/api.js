@@ -29,6 +29,13 @@ api.interceptors.request.use((config) => {
   if (csrfToken) {
     config.headers['X-CSRFToken'] = csrfToken;
   }
+
+  // Ensure token is attached even if app was reloaded
+  const token = localStorage.getItem('token');
+  if (token && token !== 'session-authenticated') {
+    config.headers['Authorization'] = `Token ${token}`;
+  }
+  
   return config;
 });
 
