@@ -29,3 +29,12 @@ project ml/
 # System
 .DS_Store
 Thumbs.db
+
+# PyInstaller build output (too large for GitHub)
+dist/
+build/
+*.spec
+
+# Temp test files
+test_*.py
+test_*.txt

@@ -96,12 +96,18 @@ pyinstaller ^
   --hidden-import "wsgiref" ^
   --hidden-import "wsgiref.simple_server" ^
   --hidden-import "wsgiref.handlers" ^
+  --hidden-import "PyQt6" ^
+  --hidden-import "PyQt6.QtCore" ^
+  --hidden-import "PyQt6.QtWidgets" ^
+  --hidden-import "PyQt6.QtWebEngineWidgets" ^
+  --hidden-import "PyQt6.QtWebEngineCore" ^
   --collect-all "webview" ^
   --collect-all "sklearn" ^
   --collect-all "django" ^
   --collect-all "whitenoise" ^
   --collect-all "corsheaders" ^
   --collect-all "rest_framework" ^
+  --collect-all "PyQt6" ^
   launcher.py
 
 IF ERRORLEVEL 1 (
