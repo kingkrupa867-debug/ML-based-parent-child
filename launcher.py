@@ -169,10 +169,44 @@ def show_error(title: str, message: str) -> None:
         print(f'[ERROR] {title}: {message}')
 
 
+class _Api:
+    """Python API exposed to JavaScript via window.pywebview.api.*
+    The window reference is injected after create_window() returns."""
+
+    def __init__(self):
+        self._win = None   # set after create_window()
+
+    def go_home(self):
+        """Navigate the WebKit2 window to the React landing page from Python side.
+        Using window.load_url() is far more reliable than window.location.href on
+        Linux GTK WebKit2 — it forces a proper GTK webview reload and repaint."""
+        if self._win is None:
+            log('[launcher] go_home() called but window not ready yet', 'WARN')
+            return
+        log('[launcher] API: go_home() called — loading landing page')
+        cb = _random.randint(100000, 999999)
+        self._win.load_url(f'{APP_URL}/?_cb={cb}')
+
+
 def open_window() -> None:
     """Open the app in a native PyWebView window (cross-platform)."""
     try:
         import webview  # type: ignore
+
+        # ── Linux: clear WebKit2 disk cache BEFORE creating window ──────────
+        if sys.platform == 'linux':
+            import shutil
+            for d in [os.path.expanduser('~/.local/share/webview'),
+                      os.path.expanduser('~/.cache/webview')]:
+                if os.path.isdir(d):
+                    try:
+                        shutil.rmtree(d)
+                        log(f'[launcher] Cleared WebKit2 cache: {d}')
+                    except Exception as exc:
+                        log(f'[launcher] Could not clear cache {d}: {exc}')
+
+        # Create API first (window ref injected after)
+        api_obj = _Api()
 
         window = webview.create_window(
             title='CommQuality — Parent-Child Communication Analyzer',
@@ -182,37 +216,35 @@ def open_window() -> None:
             resizable=True,
             min_size=(960, 640),
             text_select=True,
+            js_api=api_obj,   # exposes window.pywebview.api to JS
         )
 
+        # Now wire the window reference into the API object
+        api_obj._win = window
+
         def on_loaded():
-            log(f'[launcher] Page loaded: {window.get_current_url()}')
+            url = window.get_current_url()
+            log(f'[launcher] Page loaded: {url}')
+            # Inject a global helper so plain splash.html can also call it
+            if 'splash' in url:
+                window.evaluate_js(
+                    "window.goToLanding = function() {"
+                    "  if(window.pywebview && window.pywebview.api){"
+                    "    window.pywebview.api.go_home();"
+                    "  } else {"
+                    "    window.location.href='/';"
+                    "  }"
+                    "};"
+                )
+
         window.events.loaded += on_loaded
 
         if sys.platform == 'linux':
-            # Clear WebKit2 disk cache so pages always load fresh
-            import shutil
-            cache_dirs = [
-                os.path.expanduser('~/.local/share/webview'),
-                os.path.expanduser('~/.cache/webview'),
-            ]
-            for d in cache_dirs:
-                if os.path.isdir(d):
-                    try:
-                        shutil.rmtree(d)
-                        log(f'[launcher] Cleared WebKit2 cache: {d}')
-                    except Exception as e:
-                        log(f'[launcher] Could not clear cache {d}: {e}')
-
             try:
                 import gi
                 gi.require_version('WebKit2', '4.1')
                 from gi.repository import WebKit2
-                webkit_settings = WebKit2.Settings()
-                webkit_settings.set_enable_developer_extras(False)
-                webkit_settings.set_enable_page_cache(False)
-                webkit_settings.set_enable_html5_local_storage(True)
-                webkit_settings.set_enable_html5_database(True)
-                log('[launcher] WebKit2 localStorage enabled ✓')
+                log('[launcher] WebKit2 GTK backend ready ✓')
             except Exception as e:
                 log(f'[launcher] WebKit2 config skipped: {e}')
             webview.start(gui='gtk', debug=False)

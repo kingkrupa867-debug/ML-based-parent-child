@@ -8,6 +8,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
+from rest_framework.authtoken.models import Token
+
 from .serializers import UserRegistrationSerializer, UserLoginSerializer
 from .models import CustomUser
 
@@ -134,8 +136,10 @@ def api_login(request):
     if serializer.is_valid():
         user = serializer.validated_data['user']
         login(request, user)
+        token, _ = Token.objects.get_or_create(user=user)
         return Response({
             'message': 'Login successful.',
+            'token': token.key,
             'username': user.username,
             'role': user.role,
             'surname': user.surname,
