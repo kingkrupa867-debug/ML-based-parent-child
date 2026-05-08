@@ -149,3 +149,81 @@ def api_login(request):
 def api_logout(request):
     logout(request)
     return Response({'message': 'Logged out successfully.'})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def api_user(request):
+    """Return the currently authenticated user's profile."""
+    user = request.user
+    return Response({
+        'username': user.username,
+        'email': user.email,
+        'role': user.role,
+        'surname': user.surname,
+        'family_id': user.family_id,
+        'invite_code': user.invite_code,
+        'parent': user.parent.username if user.parent else None,
+    })
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def api_my_invite_code(request):
+    """
+    Return a parent's invite code.
+    - If authenticated via session → use request.user
+    - Fallback: ?username=<username> query param (for cross-origin SPA dev)
+    """
+    # Try session auth first
+    if request.user and request.user.is_authenticated:
+        user = request.user
+    else:
+        # Fallback for cross-origin dev (React :3000 → Django :8000)
+        username = request.query_params.get('username', '').strip()
+        if not username:
+            return Response({'error': 'Not authenticated. Please log in again.'},
+                            status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            user = CustomUser.objects.get(username=username)
+        except CustomUser.DoesNotExist:
+            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    if user.role != 'parent':
+        return Response({'error': 'Only parent accounts have an invite code.'},
+                        status=status.HTTP_403_FORBIDDEN)
+    if not user.invite_code:
+        user.save()
+        user.refresh_from_db()
+    return Response({'invite_code': user.invite_code})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def api_verify_session_code(request):
+    """
+    Child: verify a parent's invite code before the joint assessment.
+    Body: { code: "ABCD1234" }
+    Returns: { valid: true, parent_username: "...", family_id: "..." }
+    """
+    code = request.data.get('code', '').strip().upper()
+    if not code:
+        return Response({'error': 'Code is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        parent = CustomUser.objects.get(invite_code=code, role='parent')
+    except CustomUser.DoesNotExist:
+        return Response({'error': 'Invalid code. Please check with your parent.'},
+                        status=status.HTTP_404_NOT_FOUND)
+
+    # Optionally auto-link child → parent if not already linked
+    child = request.user
+    if child.role == 'child' and not child.parent:
+        child.parent = parent
+        child.save(update_fields=['parent'])
+
+    return Response({
+        'valid': True,
+        'parent_username': parent.username,
+        'family_id': parent.family_id,
+    })

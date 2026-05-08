@@ -1,0 +1,28 @@
+# Desktop-mode requirements (superset of requirements.txt)
+# Install these to run as a standalone desktop app
+
+# === Core Web Framework ===
+Django>=4.2,<5.0
+djangorestframework>=3.14
+django-cors-headers>=4.3
+whitenoise>=6.6
+
+# === ML / Data ===
+scikit-learn>=1.3
+pandas>=2.1
+openpyxl>=3.1
+joblib>=1.3
+
+# === Desktop Window ===
+pywebview>=4.4
+
+# === Production Server ===
+gunicorn>=21.2
+
+# === PyInstaller (build only) ===
+pyinstaller>=6.0
+
+# === Utils ===
+python-dotenv>=1.0
+dj-database-url>=2.1
+psycopg2-binary>=2.9

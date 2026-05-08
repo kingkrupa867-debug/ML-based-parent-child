@@ -14,4 +14,7 @@ urlpatterns = [
     path('api/register/', views.api_register, name='api_register'),
     path('api/login/', views.api_login, name='api_login'),
     path('api/logout/', views.api_logout, name='api_logout'),
+    path('api/user/',          views.api_user,                name='api_user'),
+    path('api/my-invite-code/',     views.api_my_invite_code,       name='api_my_invite_code'),
+    path('api/verify-session-code/', views.api_verify_session_code,  name='api_verify_session_code'),
 ]

@@ -13,6 +13,10 @@ const Results = () => {
   const [result, setResult] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [parentResult, setParentResult] = useState(null); // joint session
+
+  // Detect joint session
+  const parentResultId = location.state?.parentResultId;
 
   useEffect(() => {
     const stateResult = location.state?.result;
@@ -42,6 +46,12 @@ const Results = () => {
           setRecommendations(foundResult.recommendations.map((item) => item.text || item));
         }
 
+        // Also fetch parent result for joint sessions
+        if (parentResultId) {
+          const pFound = results.find((e) => e.id === Number(parentResultId));
+          if (pFound) setParentResult(pFound);
+        }
+
         try {
           const recData = await getRecommendations(resultId);
           setRecommendations(recData.recommendations || []);
@@ -64,26 +74,30 @@ const Results = () => {
       case 'Strong':
         return {
           tone: 'strong',
+          emoji: '🌟',
           message: 'Your conversations are landing well. The current pattern shows strong connection and trust.',
-          chartColor: '#1f8f58',
+          chartColor: '#34d399',
         };
       case 'Moderate':
         return {
           tone: 'moderate',
+          emoji: '🔄',
           message: 'There is a healthy base here, with a few habits that still need more consistency.',
-          chartColor: '#b86a14',
+          chartColor: '#fbbf24',
         };
       case 'Weak':
         return {
           tone: 'weak',
+          emoji: '💭',
           message: 'This result suggests the relationship needs steadier listening, clarity, and emotional safety.',
-          chartColor: '#c2483f',
+          chartColor: '#fb7185',
         };
       default:
         return {
           tone: 'moderate',
+          emoji: '📊',
           message: 'Assessment complete.',
-          chartColor: '#2dd4bf',
+          chartColor: '#818cf8',
         };
     }
   };
@@ -96,9 +110,9 @@ const Results = () => {
       datasets: [
         {
           data: [result.score, 3 - result.score],
-          backgroundColor: [getCategoryConfig(result.category).chartColor, 'rgba(148, 163, 184, 0.14)'],
+          backgroundColor: [getCategoryConfig(result.category).chartColor, 'rgba(148, 163, 184, 0.08)'],
           borderWidth: 0,
-          cutout: '72%',
+          cutout: '75%',
         },
       ],
     };
@@ -108,30 +122,30 @@ const Results = () => {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        enabled: false,
-      },
+      legend: { display: false },
+      tooltip: { enabled: false },
     },
   };
 
   if (isLoading) {
     return (
-      <div className="loading-container">
-        <div className="spinner"></div>
+      <div className="ip-loading">
+        <div className="ip-spinner" />
+        <p style={{ color:'#64748b', fontSize:'.9rem' }}>Loading your result…</p>
       </div>
     );
   }
 
   if (!result) {
     return (
-      <div className="results-container">
-        <section className="surface-panel empty-state">
-          <h2 className="empty-title">Result not found</h2>
-          <Link to="/dashboard" className="btn btn-primary-custom">Back to dashboard</Link>
-        </section>
+      <div className="inner-wrap">
+        <div className="glass-card ip-panel">
+          <div className="ip-empty">
+            <div className="ip-empty-icon">🔍</div>
+            <h2 className="ip-empty-title">Result not found</h2>
+            <Link to="/dashboard" className="ip-btn ip-btn-primary">← Back to dashboard</Link>
+          </div>
+        </div>
       </div>
     );
   }
@@ -140,40 +154,87 @@ const Results = () => {
   const chartData = getScoreChartData();
 
   return (
-    <div className="results-container fade-in">
-      <section className="result-hero">
-        <div className="result-copy">
-          <span className={`category-badge ${config.tone}`}>{result.category}</span>
-          <h1 className="result-title">Assessment result</h1>
-          <p className="hero-subtitle">{config.message}</p>
-          <div className="action-row">
-            <Link to="/questionnaire" className="btn btn-primary-custom">Take another assessment</Link>
-            <Link to="/history" className="btn btn-secondary-custom">View history</Link>
+    <div className="inner-wrap">
+      {/* Breadcrumb */}
+      <div className="ip-header" style={{ marginBottom:'20px' }}>
+        <div>
+          <h1 className="ip-title">Assessment result</h1>
+          <p className="ip-sub">{config.message}</p>
+        </div>
+        <div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
+          <Link to="/session" className="ip-btn ip-btn-primary">New assessment</Link>
+          <Link to="/history" className="ip-btn ip-btn-ghost">View history</Link>
+        </div>
+      </div>
+
+      {/* ── Family session comparison banner ── */}
+      {parentResult && (
+        <div className="glass-card fam-compare-banner">
+          <div className="fam-compare-title">
+            <span>👨‍👩‍👧</span>
+            <span>Family Session Results</span>
+          </div>
+          <div className="fam-compare-row">
+            <div className="fam-compare-card fam-parent">
+              <p className="fam-role">Parent</p>
+              <p className="fam-score">{parentResult.score ?? parentResult.overall_score ?? '–'}<span>/50</span></p>
+              <p className="fam-cat">{parentResult.category || '–'}</p>
+            </div>
+            <div className="fam-compare-vs">VS</div>
+            <div className="fam-compare-card fam-child">
+              <p className="fam-role">Child</p>
+              <p className="fam-score">{result.score ?? result.overall_score ?? '–'}<span>/50</span></p>
+              <p className="fam-cat">{result.category || '–'}</p>
+            </div>
           </div>
         </div>
+      )}
 
-        <div className="score-panel">
-          <div style={{ width: '220px', height: '220px' }}>
+      {/* Hero card */}
+      <div className="glass-card ip-result-hero">
+        <div>
+          <span className={`ip-badge ${config.tone}`} style={{ marginBottom:'14px', display:'inline-flex' }}>
+            {config.emoji} {result.category}
+          </span>
+          <p style={{ color:'#475569', fontSize:'1rem', lineHeight:1.75, maxWidth:'46ch', margin:'0 0 20px' }}>
+            {config.message}
+          </p>
+          <div style={{ fontSize:'.82rem', color:'#94a3b8' }}>
+            Scale: 1.00 = Weak · 2.00 = Moderate · 3.00 = Strong
+          </div>
+        </div>
+        <div className="ip-score-ring">
+          <div style={{ width:'180px', height:'180px', position:'relative' }}>
             {chartData && <Doughnut data={chartData} options={chartOptions} />}
           </div>
-          <div className="score-number">{result.score.toFixed(2)} / 3.00</div>
-          <div className="visually-muted">Scale: 1 weak, 2 moderate, 3 strong</div>
+          <div className="ip-score-num">{result.score.toFixed(2)} / 3.00</div>
+          <div className="ip-score-scale">Your score</div>
         </div>
-      </section>
+      </div>
 
-      <section className="surface-panel">
-        <h3 className="section-title">Recommendations</h3>
-        <p className="section-copy">These suggestions are based on the latest result and can guide your next few conversations.</p>
+      {/* Recommendations */}
+      <div className="glass-card ip-panel">
+        <div className="ip-panel-header">
+          <div>
+            <h3 className="ip-panel-title">Recommendations</h3>
+            <p className="ip-panel-sub">Suggestions based on this result — try applying one per week.</p>
+          </div>
+        </div>
         {recommendations.length > 0 ? (
-          <ul className="recommendations-list" style={{ marginTop: '18px' }}>
-            {recommendations.map((rec, index) => (
-              <li key={index} className="recommendation-item">{rec}</li>
+          <ul className="ip-recs-list">
+            {recommendations.map((rec, i) => (
+              <li key={i} className="ip-rec-item">
+                <div className="ip-rec-dot" />
+                {rec}
+              </li>
             ))}
           </ul>
         ) : (
-          <p className="muted-copy" style={{ marginTop: '18px' }}>No recommendations were returned for this result.</p>
+          <p style={{ color:'#94a3b8', fontSize:'.9rem', margin:0 }}>
+            No recommendations returned for this result.
+          </p>
         )}
-      </section>
+      </div>
     </div>
   );
 };

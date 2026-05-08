@@ -73,9 +73,8 @@ export const submitQuestionnaire = async (data) => {
   return response.data;
 };
 
-export const getPrediction = async (data) => {
-  await ensureCsrfCookie();
-  const response = await api.post('/api/predict/', data);
+export const getPrediction = async () => {
+  const response = await api.get('/api/predict/');
   return response.data;
 };
 
@@ -94,6 +93,20 @@ export const getRecommendations = async (resultId) => {
 export const getCurrentUser = async () => {
   const response = await api.get('/api/user/');
   return response.data;
+};
+
+// ==================== SESSION API ====================
+
+export const getMyInviteCode = async () => {
+  // Pass username as fallback when cross-origin cookie not available
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const response = await api.get(`/api/my-invite-code/?username=${encodeURIComponent(user.username || '')}`);
+  return response.data;   // { invite_code: "ABCD1234" }
+};
+
+export const verifySessionCode = async (code) => {
+  const response = await api.post('/api/verify-session-code/', { code });
+  return response.data;   // { valid: true, parent_username: "...", family_id: "..." }
 };
 
 export default api;

@@ -36,21 +36,17 @@ const History = () => {
     const next = history[currentIndex + 1].score;
     const diff = next - current;
 
-    if (diff > 0.1) return { status: 'improved', label: 'Improved' };
-    if (diff < -0.1) return { status: 'declined', label: 'Declined' };
-    return { status: 'no-change', label: 'No change' };
+    if (diff > 0.1) return { status: 'improved', label: '↑ Improved' };
+    if (diff < -0.1) return { status: 'declined', label: '↓ Declined' };
+    return { status: 'no-change', label: '→ No change' };
   };
 
   const getCategoryColor = (category) => {
     switch (category) {
-      case 'Strong':
-        return 'var(--success)';
-      case 'Moderate':
-        return 'var(--warning)';
-      case 'Weak':
-        return 'var(--danger)';
-      default:
-        return 'var(--muted)';
+      case 'Strong': return 'var(--success)';
+      case 'Moderate': return 'var(--warning)';
+      case 'Weak': return 'var(--danger)';
+      default: return 'var(--muted)';
     }
   };
 
@@ -60,15 +56,15 @@ const History = () => {
       {
         label: 'Communication Score',
         data: history.slice().reverse().map((result) => result.score),
-        borderColor: '#2dd4bf',
-        backgroundColor: 'rgba(45, 212, 191, 0.14)',
+        borderColor: '#818cf8',
+        backgroundColor: 'rgba(99, 102, 241, 0.08)',
         fill: true,
-        tension: 0.32,
-        pointBackgroundColor: '#2dd4bf',
-        pointBorderColor: '#0d1320',
+        tension: 0.4,
+        pointBackgroundColor: '#818cf8',
+        pointBorderColor: '#0a0e1a',
         pointBorderWidth: 2,
-        pointRadius: 5,
-        pointHoverRadius: 7,
+        pointRadius: 6,
+        pointHoverRadius: 8,
       },
     ],
   };
@@ -77,16 +73,15 @@ const History = () => {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        display: false,
-      },
+      legend: { display: false },
       tooltip: {
-        backgroundColor: '#151f2e',
+        backgroundColor: '#1e1b4b',
         titleColor: '#e5e7eb',
-        bodyColor: '#a8b3c5',
-        borderColor: 'rgba(148, 163, 184, 0.18)',
+        bodyColor: '#94a3b8',
+        borderColor: 'rgba(99, 102, 241, 0.3)',
         borderWidth: 1,
-        padding: 12,
+        padding: 14,
+        cornerRadius: 10,
         displayColors: false,
         callbacks: {
           label: (context) => `Score: ${context.parsed.y.toFixed(2)}`,
@@ -95,23 +90,13 @@ const History = () => {
     },
     scales: {
       y: {
-        min: 1,
-        max: 3,
-        grid: {
-          color: 'rgba(148, 163, 184, 0.12)',
-        },
-        ticks: {
-          color: '#a8b3c5',
-          stepSize: 0.5,
-        },
+        min: 1, max: 3,
+        grid: { color: 'rgba(148, 163, 184, 0.06)' },
+        ticks: { color: '#94a3b8', stepSize: 0.5 },
       },
       x: {
-        grid: {
-          display: false,
-        },
-        ticks: {
-          color: '#a8b3c5',
-        },
+        grid: { display: false },
+        ticks: { color: '#94a3b8' },
       },
     },
   };
@@ -129,88 +114,97 @@ const History = () => {
 
   if (isLoading) {
     return (
-      <div className="loading-container">
-        <div className="spinner"></div>
+      <div className="ip-loading">
+        <div className="ip-spinner" />
+        <p style={{ color:'#64748b', fontSize:'.9rem' }}>Loading history…</p>
       </div>
     );
   }
 
   return (
-    <div className="dashboard-container fade-in">
-      <div className="page-header">
+    <div className="inner-wrap">
+      {/* Header */}
+      <div className="ip-header">
         <div>
-          <h1 className="dashboard-title">Assessment history</h1>
-          <p className="dashboard-subtitle">See how your communication score has changed over time.</p>
+          <h1 className="ip-title">Assessment history</h1>
+          <p className="ip-sub">Track how your communication score has changed over time.</p>
         </div>
-        <Link to="/dashboard" className="btn btn-secondary-custom">Back to dashboard</Link>
+        <Link to="/dashboard" className="ip-btn ip-btn-ghost">← Dashboard</Link>
       </div>
 
+      {/* Family summary strip */}
       {familyHistory.length > 0 && (
-        <section className="surface-panel">
-          <h3 className="section-title">Family comparison</h3>
-          <div className="stats-grid" style={{ marginTop: '18px' }}>
-            <div className="stat-card">
-              <div className="stat-label">Present score</div>
-              <div className="stat-value">{familySummary?.current_score ? familySummary.current_score.toFixed(2) : familyHistory[0].score.toFixed(2)}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Previous score</div>
-              <div className="stat-value">{familySummary?.previous_score ? familySummary.previous_score.toFixed(2) : (familyHistory[1] ? familyHistory[1].score.toFixed(2) : 'N/A')}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Status</div>
-              <div className="stat-value" style={{ fontSize: '1.45rem' }}>{familySummary?.status_text || 'Needs first comparison'}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Entries in family timeline</div>
-              <div className="stat-value">{familyHistory.length}</div>
-            </div>
+        <div className="ip-stats-grid" style={{ marginBottom:'24px' }}>
+          <div className="glass-card ip-stat-card">
+            <div className="ip-stat-label">Current family score</div>
+            <div className="ip-stat-value">{(familySummary?.current_score ?? familyHistory[0]?.score ?? 0).toFixed(2)}</div>
           </div>
-        </section>
+          <div className="glass-card ip-stat-card">
+            <div className="ip-stat-label">Previous family score</div>
+            <div className="ip-stat-value">{familySummary?.previous_score ? familySummary.previous_score.toFixed(2) : (familyHistory[1] ? familyHistory[1].score.toFixed(2) : '—')}</div>
+          </div>
+          <div className="glass-card ip-stat-card">
+            <div className="ip-stat-label">Family status</div>
+            <div className="ip-stat-value" style={{ fontSize:'1rem' }}>{familySummary?.status_text || 'First entry'}</div>
+          </div>
+          <div className="glass-card ip-stat-card">
+            <div className="ip-stat-label">Family entries</div>
+            <div className="ip-stat-value">{familyHistory.length}</div>
+          </div>
+        </div>
       )}
 
+      {/* Chart */}
       {history.length > 0 && (
-        <div className="chart-container">
-          <h3 className="chart-title">Progress over time</h3>
-          <div className="chart-frame">
+        <div className="glass-card ip-chart-wrap">
+          <h3 className="ip-panel-title" style={{ marginBottom:'20px' }}>Progress over time</h3>
+          <div className="ip-chart-frame">
             <Line data={chartData} options={chartOptions} />
           </div>
         </div>
       )}
 
+      {/* My assessments table */}
       {history.length > 0 ? (
-        <section className="surface-panel">
-          <h3 className="section-title">All assessments</h3>
-          <div className="table-shell" style={{ marginTop: '18px' }}>
-            <table className="history-table">
+        <div className="glass-card ip-panel">
+          <div className="ip-panel-header">
+            <div>
+              <h3 className="ip-panel-title">My assessments</h3>
+              <p className="ip-panel-sub">All your personal communication records.</p>
+            </div>
+          </div>
+          <div className="ip-table-wrap">
+            <table className="ip-table">
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>Date</th>
-                  <th>Score</th>
-                  <th>Category</th>
-                  <th>Progress</th>
-                  <th>Action</th>
+                  <th>#</th><th>Date</th><th>Score</th><th>Category</th><th>Change</th><th>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {history.map((result, index) => {
-                  const progress = getProgressStatus(index);
+                  const prog = getProgressStatus(index);
+                  const pillClass = prog
+                    ? (prog.status === 'improved' ? 'improved' : prog.status === 'declined' ? 'declined' : 'no-change')
+                    : (index === 0 ? 'latest' : 'no-change');
                   return (
                     <tr key={result.id}>
-                      <td>{history.length - index}</td>
+                      <td className="td-bold">{history.length - index}</td>
                       <td>{formatDate(result.submitted_at)}</td>
-                      <td>{result.score.toFixed(2)}</td>
-                      <td style={{ color: getCategoryColor(result.category), fontWeight: 700 }}>{result.category}</td>
+                      <td className="td-bold">{result.score.toFixed(2)}</td>
                       <td>
-                        {progress ? (
-                          <span className={`status-pill ${progress.status}`}>{progress.label}</span>
-                        ) : (
-                          <span className="visually-muted">{index === 0 ? 'Latest' : '-'}</span>
-                        )}
+                        <span className={`ip-badge ${result.category?.toLowerCase()}`}>
+                          {result.category}
+                        </span>
                       </td>
                       <td>
-                        <Link to={`/results/${result.id}`} className="btn btn-secondary-custom">View</Link>
+                        <span className={`ip-pill ${pillClass}`}>
+                          {prog ? prog.label : (index === 0 ? '✦ Latest' : '—')}
+                        </span>
+                      </td>
+                      <td>
+                        <Link to={`/results/${result.id}`} className="ip-btn ip-btn-ghost" style={{ fontSize:'.82rem', padding:'7px 14px' }}>
+                          View
+                        </Link>
                       </td>
                     </tr>
                   );
@@ -218,43 +212,48 @@ const History = () => {
               </tbody>
             </table>
           </div>
-        </section>
+        </div>
       ) : (
-        <section className="surface-panel empty-state">
-          <h3 className="empty-title">No history yet</h3>
-          <p className="empty-copy">Complete your first assessment to build a timeline here.</p>
-          <Link to="/questionnaire" className="btn btn-primary-custom">Start assessment</Link>
-        </section>
+        <div className="glass-card ip-panel">
+          <div className="ip-empty">
+            <div className="ip-empty-icon">📈</div>
+            <h3 className="ip-empty-title">No history yet</h3>
+            <p className="ip-empty-sub">Complete your first assessment to build a timeline here.</p>
+            <Link to="/session" className="ip-btn ip-btn-primary">Start assessment</Link>
+          </div>
+        </div>
       )}
 
+      {/* Family timeline */}
       {familyHistory.length > 0 && (
-        <section className="surface-panel">
-          <h3 className="section-title">Family timeline</h3>
-          <div className="table-shell" style={{ marginTop: '18px' }}>
-            <table className="history-table">
+        <div className="glass-card ip-panel">
+          <div className="ip-panel-header">
+            <div>
+              <h3 className="ip-panel-title">Family timeline</h3>
+              <p className="ip-panel-sub">Combined records from connected family members.</p>
+            </div>
+          </div>
+          <div className="ip-table-wrap">
+            <table className="ip-table">
               <thead>
-                <tr>
-                  <th>Member</th>
-                  <th>Role</th>
-                  <th>Date</th>
-                  <th>Score</th>
-                  <th>Category</th>
-                </tr>
+                <tr><th>Member</th><th>Role</th><th>Date</th><th>Score</th><th>Category</th></tr>
               </thead>
               <tbody>
                 {familyHistory.map((result) => (
                   <tr key={`family-${result.id}`}>
-                    <td>{result.username}</td>
-                    <td style={{ textTransform: 'capitalize' }}>{result.role}</td>
+                    <td className="td-bold">{result.username}</td>
+                    <td style={{ textTransform:'capitalize' }}>{result.role}</td>
                     <td>{formatDate(result.submitted_at)}</td>
-                    <td>{result.score.toFixed(2)}</td>
-                    <td style={{ color: getCategoryColor(result.category), fontWeight: 700 }}>{result.category}</td>
+                    <td className="td-bold">{result.score.toFixed(2)}</td>
+                    <td>
+                      <span className={`ip-badge ${result.category?.toLowerCase()}`}>{result.category}</span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </section>
+        </div>
       )}
     </div>
   );

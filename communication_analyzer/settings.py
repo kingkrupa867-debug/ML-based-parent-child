@@ -40,10 +40,12 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'communication_analyzer.urls'
 
+REACT_BUILD_DIR = BASE_DIR / 'frontend' / 'build'
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [REACT_BUILD_DIR, BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -79,7 +81,10 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+    BASE_DIR / 'frontend' / 'build' / 'static',   # React build assets
+]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -111,8 +116,11 @@ CSRF_TRUSTED_ORIGINS = env.list(
     default=['http://localhost:3000', 'http://127.0.0.1:3000']
 )
 
+# Desktop mode: disable SSL redirect (needed for local pywebview)
+DESKTOP_MODE = os.environ.get('DESKTOP_MODE', 'false').lower() == 'true'
+
 # Production Security Settings
-if not DEBUG:
+if not DEBUG and not DESKTOP_MODE:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -121,4 +129,4 @@ if not DEBUG:
     SECURE_HSTS_PRELOAD = True
 
 # WhiteNoise Configuration
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'

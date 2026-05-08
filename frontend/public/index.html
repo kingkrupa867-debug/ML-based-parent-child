@@ -10,5 +10,58 @@
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+
+    <!-- WebKit2GTK localStorage polyfill (same as Kids Hobby project) -->
+    <script>
+      // WebKit2GTK makes window.localStorage read-only and null on http://.
+      // Force-override it using Object.defineProperty.
+      (function() {
+        function makeStore() {
+          var s = {};
+          return {
+            getItem:    function(k)    { return s.hasOwnProperty(k) ? s[k] : null; },
+            setItem:    function(k, v) { s[k] = String(v); },
+            removeItem: function(k)    { delete s[k]; },
+            clear:      function()     { s = {}; },
+            key:        function(i)    { return Object.keys(s)[i] || null; },
+            get length()               { return Object.keys(s).length; }
+          };
+        }
+        try {
+          if (!window.localStorage || window.localStorage === null) {
+            throw new Error('null');
+          }
+          window.localStorage.setItem('__test__', '1');
+          window.localStorage.removeItem('__test__');
+        } catch(e) {
+          // Force-override the read-only property
+          try {
+            Object.defineProperty(window, 'localStorage', {
+              value: makeStore(), writable: true, configurable: true
+            });
+          } catch(e2) {}
+          try {
+            Object.defineProperty(window, 'sessionStorage', {
+              value: makeStore(), writable: true, configurable: true
+            });
+          } catch(e3) {}
+          console.log('[polyfill] localStorage/sessionStorage replaced with in-memory store');
+        }
+      })();
+    </script>
+
+    <!-- Error handler — show JS errors visually instead of white screen -->
+    <script>
+      window.onerror = function(msg, src, line, col, err) {
+        document.getElementById('root').innerHTML =
+          '<div style="color:red;padding:20px;font-family:monospace;font-size:13px"><b>JS ERROR:</b><br>' + msg + '<br><br>at ' + src + ':' + line + '</div>';
+        return false;
+      };
+      window.addEventListener('unhandledrejection', function(e) {
+        var d = document.getElementById('root');
+        if (d && !d.children.length)
+          d.innerHTML = '<div style="color:orange;padding:20px;font-family:monospace;font-size:13px"><b>PROMISE ERROR:</b><br>' + e.reason + '</div>';
+      });
+    </script>
   </body>
 </html>

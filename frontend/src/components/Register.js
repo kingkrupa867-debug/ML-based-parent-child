@@ -1,212 +1,169 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import { register } from '../services/api';
+import { toast } from 'react-toastify';
 
 const Register = () => {
-  const [searchParams] = useSearchParams();
-  const initialRole = searchParams.get('role') || 'parent';
-
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    surname: '',
-    password: '',
-    password_confirm: '',
-    role: initialRole,
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [form, setForm] = useState({
+    username: '', surname: '', email: '',
+    password: '', confirm_password: '',
+    role: searchParams.get('role') || 'parent',
+  });
+  const [loading, setLoading] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
 
   useEffect(() => {
-    const role = searchParams.get('role');
-    if (role) {
-      setFormData((prev) => ({ ...prev, role }));
-    }
+    const r = searchParams.get('role');
+    if (r) setForm(f => ({ ...f, role: r }));
   }, [searchParams]);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleRoleChange = (role) => {
-    setFormData({
-      ...formData,
-      role,
-    });
-  };
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (formData.password !== formData.password_confirm) {
-      toast.error('Passwords do not match!');
-      return;
-    }
-
-    if (formData.password.length < 8) {
-      toast.error('Password must be at least 8 characters!');
-      return;
-    }
-
-    setIsLoading(true);
-
+    if (!form.surname.trim()) { toast.error('Surname is required.'); return; }
+    if (form.password !== form.confirm_password) { toast.error('Passwords do not match.'); return; }
+    if (form.password.length < 8) { toast.error('Password must be at least 8 characters.'); return; }
+    setLoading(true);
     try {
-      const registerData = {
-        username: formData.username,
-        email: formData.email,
-        surname: formData.surname,
-        password: formData.password,
-        confirm_password: formData.password_confirm,
-        role: formData.role,
-      };
-      await register(registerData);
-      toast.success('Account created successfully!');
-      navigate('/login');
-    } catch (error) {
-      const errors = error.response?.data;
-      let errorMessage = 'Registration failed. Please try again.';
-
-      if (errors) {
-        const firstError = Object.values(errors)[0];
-        errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
-      }
-
-      toast.error(errorMessage);
+      /* api.js register() expects a single object */
+      const data = await register({
+        username:         form.username,
+        surname:          form.surname.trim(),
+        email:            form.email,
+        password:         form.password,
+        confirm_password: form.confirm_password,
+        role:             form.role,
+      });
+      /* Backend returns role/surname/family_id — store what we have */
+      localStorage.setItem('token', data.token || 'session-authenticated');
+      localStorage.setItem('user', JSON.stringify({
+        username: form.username,
+        role:     data.role || form.role,
+      }));
+      toast.success('Account created! Welcome.');
+      navigate('/dashboard');
+    } catch (err) {
+      const d = err.response?.data;
+      const msg =
+        d?.non_field_errors?.[0] ||
+        d?.username?.[0] ||
+        d?.surname?.[0] ||
+        d?.email?.[0] ||
+        d?.password?.[0] ||
+        d?.error ||
+        'Registration failed. Please check your details.';
+      toast.error(msg);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="auth-shell fade-in">
-      <section className="surface-panel auth-panel">
-        <div className="auth-header">
-          <span className="auth-badge">Create account</span>
-          <h1 className="auth-title">Start tracking communication with a calmer, cleaner setup.</h1>
-          <p className="auth-subtitle">
-            Choose the role you are answering from, then create your account to save results over time.
-          </p>
+    <div className="auth-shell">
+    <div className="auth-page">
+      {/* Left — SVG illustration panel */}
+      <div className="auth-left auth-left-svg">
+        <div className="auth-svg-top">
+          <div className="auth-img-brand">CommQuality</div>
+          <h2 className="auth-img-tagline">Join families building<br/>stronger bonds.</h2>
         </div>
+        <img
+          src="/Login-pana.svg"
+          alt="Register illustration"
+          className="auth-svg-img"
+        />
+      </div>
 
-        <div className="form-grid">
-          <div className="form-field">
-            <label className="form-label-custom">I am answering as</label>
-            <div className="segmented-control">
-              <button
-                type="button"
-                className={`segmented-option ${formData.role === 'parent' ? 'btn btn-primary-custom' : 'btn btn-secondary-custom'}`}
-                onClick={() => handleRoleChange('parent')}
-              >
-                Parent
-              </button>
-              <button
-                type="button"
-                className={`segmented-option ${formData.role === 'child' ? 'btn btn-primary-custom' : 'btn btn-secondary-custom'}`}
-                onClick={() => handleRoleChange('child')}
-              >
-                Child
-              </button>
-            </div>
+      {/* Right panel */}
+      <div className="auth-right">
+        <div className="auth-form-box">
+          <div className="auth-form-header">
+            <h1 className="auth-form-title">Create your account</h1>
+            <p className="auth-form-sub">
+              Registering as{' '}
+              <span className="auth-role-badge">{form.role === 'parent' ? 'Parent' : 'Child'}</span>
+            </p>
           </div>
 
-          <form className="form-grid" onSubmit={handleSubmit}>
-            <div className="form-field">
-              <label htmlFor="username" className="form-label-custom">Username</label>
-              <input
-                type="text"
-                id="username"
-                name="username"
-                className="form-control-custom"
-                placeholder="Choose a username"
-                value={formData.username}
-                onChange={handleChange}
-                required
-                minLength="3"
-              />
+          <form className="auth-form" onSubmit={handleSubmit}>
+
+            {/* Username + Surname row */}
+            <div className="auth-2col">
+              <div className="auth-field">
+                <label className="auth-label">Username *</label>
+                <input type="text" name="username" className="auth-input"
+                  placeholder="e.g. john_doe" value={form.username}
+                  onChange={handleChange} autoComplete="username" required />
+              </div>
+              <div className="auth-field">
+                <label className="auth-label">Surname *</label>
+                <input type="text" name="surname" className="auth-input"
+                  placeholder="e.g. Smith" value={form.surname}
+                  onChange={handleChange} required />
+              </div>
             </div>
 
-            <div className="form-field">
-              <label htmlFor="email" className="form-label-custom">Email</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                className="form-control-custom"
-                placeholder="Enter your email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
+            {/* Email */}
+            <div className="auth-field">
+              <label className="auth-label">Email</label>
+              <input type="email" name="email" className="auth-input"
+                placeholder="your@email.com" value={form.email}
+                onChange={handleChange} autoComplete="email" />
             </div>
 
-            <div className="form-field">
-              <label htmlFor="surname" className="form-label-custom">Surname</label>
-              <input
-                type="text"
-                id="surname"
-                name="surname"
-                className="form-control-custom"
-                placeholder="Enter family surname"
-                value={formData.surname}
-                onChange={handleChange}
-                required
-              />
+            {/* Password + Confirm row */}
+            <div className="auth-2col">
+              <div className="auth-field">
+                <label className="auth-label">Password *</label>
+                <div className="auth-input-wrap">
+                  <input type={showPwd ? 'text' : 'password'} name="password"
+                    className="auth-input" placeholder="Min. 8 chars"
+                    value={form.password} onChange={handleChange}
+                    autoComplete="new-password" required />
+                  <button type="button" className="auth-pwd-toggle"
+                    onClick={() => setShowPwd(!showPwd)}>
+                    {showPwd ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              </div>
+              <div className="auth-field">
+                <label className="auth-label">Confirm password *</label>
+                <input type={showPwd ? 'text' : 'password'} name="confirm_password"
+                  className="auth-input" placeholder="Repeat password"
+                  value={form.confirm_password} onChange={handleChange}
+                  autoComplete="new-password" required />
+              </div>
             </div>
 
-            <div className="form-field">
-              <label htmlFor="password" className="form-label-custom">Password</label>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                id="password"
-                name="password"
-                className="form-control-custom"
-                placeholder="Create a password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                minLength="8"
-              />
+            {/* Role toggle */}
+            <div className="auth-field">
+              <label className="auth-label">I am a *</label>
+              <div className="auth-role-toggle">
+                {['parent', 'child'].map(r => (
+                  <button key={r} type="button"
+                    className={`auth-role-toggle-btn ${form.role === r ? 'active' : ''}`}
+                    onClick={() => setForm(f => ({ ...f, role: r }))}>
+                    {r.charAt(0).toUpperCase() + r.slice(1)}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="form-field">
-              <label htmlFor="password_confirm" className="form-label-custom">Confirm password</label>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                id="password_confirm"
-                name="password_confirm"
-                className="form-control-custom"
-                placeholder="Re-enter your password"
-                value={formData.password_confirm}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <label className="check-row">
-              <input
-                type="checkbox"
-                id="showPassword"
-                checked={showPassword}
-                onChange={() => setShowPassword(!showPassword)}
-              />
-              <span>Show password fields</span>
-            </label>
-
-            <button type="submit" className="btn btn-primary-custom" disabled={isLoading}>
-              {isLoading ? 'Creating account...' : 'Create account'}
+            <button type="submit" className="auth-submit" disabled={loading}>
+              {loading ? <span className="auth-spinner" /> : 'Create account'}
             </button>
           </form>
-        </div>
 
-        <p className="auth-footer">
-          Already have an account? <Link to="/login" style={{ color: 'var(--primary-deep)', fontWeight: 700 }}>Sign in</Link>
-        </p>
-      </section>
+          <p className="auth-switch">
+            Already have an account?{' '}
+            <Link to="/login" className="auth-switch-link">Sign in</Link>
+          </p>
+        </div>
+      </div>
+    </div>
     </div>
   );
 };

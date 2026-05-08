@@ -40,22 +40,22 @@ const Navbar = () => {
       <div className="site-nav-inner">
         <Link className="brand-block" to={isLoggedIn ? "/dashboard" : "/"}>
           <span className="brand-mark">CommQuality</span>
-          <span className="brand-note">Parent-child communication review</span>
+          <span className="brand-note">Parent–child communication review</span>
         </Link>
 
         <div className="nav-links">
           {isLoggedIn ? (
             <>
               <Link className={`nav-link-custom ${isActive('/dashboard')}`} to="/dashboard">
-                Dashboard
+                📊 Dashboard
               </Link>
               <Link className={`nav-link-custom ${isActive('/questionnaire')}`} to="/questionnaire">
-                Assessment
+                📝 Assessment
               </Link>
               <Link className={`nav-link-custom ${isActive('/history')}`} to="/history">
-                History
+                📈 History
               </Link>
-              <span className="nav-user">{user?.username || 'User'}</span>
+              <span className="nav-user">👤 {user?.username || 'User'}</span>
               <button className="btn btn-secondary-custom" onClick={handleLogout}>
                 Logout
               </button>
