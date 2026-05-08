@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import '../styles/splash.css';
 
 const teamMembers = [
-  { name: 'Ch. Prameela',     rollNo: '2023-2402006', semester: 'BCA 6' },
-  { name: 'N. Sivananda',     rollNo: '2023-2402010', semester: 'BCA 6' },
-  { name: 'G. Bindu Bhavani', rollNo: '2023-2402034', semester: 'BCA 6' },
-  { name: 'G. Denush',        rollNo: '2023-2402060', semester: 'BCA 6' },
+  { name: 'G. Krupa Prasad',      rollNo: '2023-2402018', semester: 'BCA 6' },
+  { name: 'D. Siri Varshini',     rollNo: '2023-2402027', semester: 'BCA 6' },
+  { name: 'S. Jagadesh Chowdary', rollNo: '2023-2402052', semester: 'BCA 6' },
 ];
 
 function SplashScreen() {
@@ -57,7 +56,7 @@ function SplashScreen() {
       {/* ── PROJECT TITLE ── */}
       <div className="splash-title-row">
         <div className="splash-main-title">
-          Kids Hobby Prediction System using ML
+          Machine Learning Based Parent-Child<br />Communication Quality Analyzer
         </div>
       </div>
 
@@ -66,11 +65,11 @@ function SplashScreen() {
 
         {/* LEFT — Guide */}
         <div className="splash-guide-panel">
-          <div className="splash-guide-title">Under Guidance of</div>
-          <div className="splash-guide-name">Smt. P. Ratna Pavani</div>
-          <div className="splash-guide-designation">Assistant Professor</div>
+          <div className="splash-guide-title">Project Guide:</div>
+          <div className="splash-guide-name">Mrs. P. Ratna Pavani</div>
+          <div className="splash-guide-designation">Assistant Professor &amp; HOD of BCA</div>
           <div className="splash-guide-dept">
-            Department of Computer Applications (UG)
+            Department of Computer Applications
           </div>
         </div>
 
