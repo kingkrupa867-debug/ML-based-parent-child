@@ -50,6 +50,7 @@ pyinstaller ^
   --add-data "questionnaire;questionnaire" ^
   --add-data "communication_analyzer;communication_analyzer" ^
   --add-data "templates;templates" ^
+  --add-data "static;static" ^
   --add-data "frontend\build;frontend\build" ^
   --add-data "db.sqlite3;." ^
   --add-data "manage.py;." ^

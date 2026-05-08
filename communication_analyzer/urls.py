@@ -13,6 +13,7 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 from django.shortcuts import redirect
 from django.views.generic import TemplateView
+from django.views.static import serve as static_serve
 from django.template.response import TemplateResponse
 import os
 from django.conf import settings
@@ -49,6 +50,20 @@ urlpatterns = [
     path('go/', lambda r: __import__('django.http', fromlist=['HttpResponse']).HttpResponse('ok'), name='go'),
     path('', include('accounts.urls')),
     path('', include('questionnaire.urls')),
-    # Catch-all: serve React index.html for all client-side routes
-    re_path(r'^(?!api/|admin/|splash/).*$', spa_view, name='react_catchall'),
+]
+
+# ── Serve root-level public files from React build (images, SVGs, etc.) ──
+REACT_BUILD_DIR = getattr(settings, 'REACT_BUILD_DIR', None)
+if REACT_BUILD_DIR and REACT_BUILD_DIR.exists():
+    urlpatterns += [
+        re_path(
+            r'^(?P<path>.*\.(png|svg|ico|jpg|jpeg|gif|webp|json|txt))$',
+            static_serve,
+            {'document_root': str(REACT_BUILD_DIR)},
+        ),
+    ]
+
+# Catch-all: serve React index.html for all client-side routes
+urlpatterns += [
+    re_path(r'^(?!api/|admin/|splash/|static/).*$', spa_view, name='react_catchall'),
 ]

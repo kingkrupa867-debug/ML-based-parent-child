@@ -118,8 +118,11 @@ def start_django() -> None:
             log(f'[launcher] Traceback:\n{traceback.format_exc()}')
     else:
         # ── Script mode: use venv python if available ────────────────────────
-        # Check for a local venv first (works with collectstatic)
-        venv_python = os.path.join(BASE_DIR, 'venv', 'bin', 'python')
+        # Check for a local venv first (works cross-platform)
+        if sys.platform == 'win32':
+            venv_python = os.path.join(BASE_DIR, 'venv', 'Scripts', 'python.exe')
+        else:
+            venv_python = os.path.join(BASE_DIR, 'venv', 'bin', 'python')
         python = venv_python if os.path.exists(venv_python) else sys.executable
         manage = os.path.join(BASE_DIR, 'manage.py')
         log(f'Using Python: {python}')
