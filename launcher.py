@@ -232,7 +232,7 @@ def open_window() -> None:
                 window.evaluate_js(
                     "window.goToLanding = function() {"
                     "  if(window.pywebview && window.pywebview.api){"
-                    "    window.pywebview.api.go_home();"
+                    "    setTimeout(function() { window.pywebview.api.go_home(); }, 10);"
                     "  } else {"
                     "    window.location.href='/';"
                     "  }"
