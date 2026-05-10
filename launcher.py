@@ -263,19 +263,26 @@ def open_window() -> None:
             from PyQt6.QtWidgets import QApplication, QMainWindow
             from PyQt6.QtWebEngineWidgets import QWebEngineView
             from PyQt6.QtWebEngineCore import QWebEnginePage
-            
+
+            class CustomWebEnginePage(QWebEnginePage):
+                def javaScriptConsoleMessage(self, level, msg, line, sourceID):
+                    log(f"[PyQt6-JS] {msg} (line {line} in {sourceID})")
+
             log('[launcher] pywebview not found — using PyQt6 instead.')
-            
+
             app = QApplication(sys.argv)
             window = QMainWindow()
             window.setWindowTitle('CommQuality — Parent-Child Communication Analyzer')
             window.resize(1280, 800)
-            
+
             browser = QWebEngineView()
-            
+            custom_page = CustomWebEnginePage(browser)
+            browser.setPage(custom_page)
+
             # Automatically grant permissions (e.g. Clipboard access)
             def handle_permission(url, feature):
                 browser.page().setFeaturePermission(url, feature, QWebEnginePage.PermissionPolicy.PermissionGrantedByUser)
+
             
             browser.page().featurePermissionRequested.connect(handle_permission)
             
