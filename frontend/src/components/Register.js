@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { register } from '../services/api';
+import { register, setAuthToken } from '../services/api';
 import { toast } from 'react-toastify';
 
 const Register = () => {
@@ -37,10 +37,10 @@ const Register = () => {
         confirm_password: form.confirm_password,
         role:             form.role,
       });
-      /* Backend returns role/surname/family_id — store what we have */
-      localStorage.setItem('token', data.token || 'session-authenticated');
+      /* Store the real auth token returned by the backend */
+      setAuthToken(data.token);
       localStorage.setItem('user', JSON.stringify({
-        username: form.username,
+        username: data.username || form.username,
         role:     data.role || form.role,
       }));
       toast.success('Account created! Welcome.');

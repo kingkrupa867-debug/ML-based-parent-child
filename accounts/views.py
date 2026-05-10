@@ -117,9 +117,14 @@ def api_register(request):
     serializer = UserRegistrationSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
+        # Create an auth token for the new user so the React app can
+        # authenticate immediately after registration (same as api_login).
+        token, _ = Token.objects.get_or_create(user=user)
         return Response(
             {
                 'message': 'User registered successfully.',
+                'token': token.key,
+                'username': user.username,
                 'role': user.role,
                 'surname': user.surname,
                 'family_id': user.family_id,
