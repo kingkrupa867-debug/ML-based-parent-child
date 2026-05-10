@@ -71,6 +71,8 @@ pyinstaller ^
   --hidden-import "django.template.defaultfilters" ^
   --hidden-import "django.template.loader_tags" ^
   --hidden-import "rest_framework" ^
+  --hidden-import "rest_framework.authtoken" ^
+  --hidden-import "rest_framework.authtoken.models" ^
   --hidden-import "corsheaders" ^
   --hidden-import "whitenoise" ^
   --hidden-import "dj_database_url" ^
