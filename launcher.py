@@ -252,7 +252,7 @@ def open_window() -> None:
             webview.start(gui='gtk', debug=False)
 
         elif sys.platform == 'win32':
-            webview.start(debug=False)
+            webview.start(debug=True)
 
         else:
             webview.start(debug=False)

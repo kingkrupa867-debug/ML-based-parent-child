@@ -40,8 +40,18 @@ def _splash_log(request):
     return HttpResponse('ok')
 
 
-# ── SPA view — serves React index.html as-is (no script modification) ────
-spa_view = TemplateView.as_view(template_name='index.html')
+def _spa_view(request):
+    """Serve the React index.html.
+    We must disable caching here because when we rebuild the React app, 
+    the JS bundle hashes change. If pywebview caches index.html, it will 
+    request the old deleted JS files and cause a white screen."""
+    response = TemplateResponse(request, 'index.html')
+    response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    return response
+
+spa_view = _spa_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
